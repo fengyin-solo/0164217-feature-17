@@ -73,6 +73,96 @@
         </div>
       </div>
 
+      <!-- 栏目订阅 -->
+      <div class="footer-subscribe">
+        <div class="subscribe-info">
+          <h4>
+            <el-icon><Bell /></el-icon>
+            订阅栏目更新
+          </h4>
+          <p>勾选感兴趣的栏目，有新内容时将在站内提醒您</p>
+        </div>
+
+        <div class="subscribe-form">
+          <el-checkbox-group v-model="selectedChannels">
+            <el-checkbox
+              v-for="channel in channels"
+              :key="channel.key"
+              :value="channel.key"
+            >
+              {{ channel.name }}
+            </el-checkbox>
+          </el-checkbox-group>
+
+          <div class="subscribe-actions">
+            <el-button type="primary" round @click="handleSubscribe">提交订阅</el-button>
+            <el-button round :disabled="selectedChannels.length === 0" @click="clearSelection">
+              清空选择
+            </el-button>
+
+            <el-popover placement="top" :width="360" trigger="click" :teleported="false">
+              <template #reference>
+                <el-badge :value="unreadCount" :hidden="unreadCount === 0" class="notify-badge">
+                  <el-button round>
+                    <el-icon><Bell /></el-icon>
+                    更新提醒
+                  </el-button>
+                </el-badge>
+              </template>
+
+              <div class="notify-panel">
+                <div class="notify-header">
+                  <span class="notify-title">更新提醒</span>
+                  <el-button
+                    v-if="unreadCount > 0"
+                    link
+                    type="primary"
+                    size="small"
+                    @click="subscriptionStore.markAllRead()"
+                  >
+                    全部已读
+                  </el-button>
+                </div>
+
+                <p v-if="subscriptions.length === 0" class="notify-empty">
+                  您还未订阅任何栏目，勾选上方感兴趣的栏目并提交订阅后，栏目有新内容时会在这里提醒您。
+                </p>
+                <p v-else-if="notifications.length === 0" class="notify-empty">
+                  暂无新的更新提醒，已订阅栏目有新内容时会第一时间通知您。
+                </p>
+                <ul v-else class="notify-list">
+                  <li
+                    v-for="item in notifications"
+                    :key="item.id"
+                    class="notify-item"
+                    :class="{ unread: !item.read }"
+                  >
+                    <el-tag size="small" effect="plain">{{ item.channelName }}</el-tag>
+                    <div class="notify-item-content">
+                      <p class="notify-item-title">{{ item.title }}</p>
+                      <span class="notify-item-time">{{ formatTime(item.time) }}</span>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </el-popover>
+          </div>
+        </div>
+
+        <div v-if="subscriptions.length > 0" class="subscribed-list">
+          <span class="subscribed-label">已订阅：</span>
+          <el-tag
+            v-for="key in subscriptions"
+            :key="key"
+            closable
+            class="subscribed-tag"
+            @close="handleUnsubscribe(key)"
+          >
+            {{ channelName(key) }}
+          </el-tag>
+        </div>
+      </div>
+
       <!-- 底部版权 -->
       <div class="footer-bottom">
         <p>© {{ currentYear }} Portal. All rights reserved.</p>
@@ -87,15 +177,60 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import { ElMessage } from 'element-plus'
+import { useSubscriptionStore, SUBSCRIPTION_CHANNELS } from '@/stores/subscription'
+import type { SubscriptionChannelKey } from '@/types'
 
 const router = useRouter()
 const currentYear = computed(() => new Date().getFullYear())
 
 const handleNotImplemented = () => {
   ElMessage.info('功能开发中，敬请期待')
+}
+
+// ==================== 栏目订阅 ====================
+const subscriptionStore = useSubscriptionStore()
+const { subscriptions, notifications, unreadCount } = storeToRefs(subscriptionStore)
+
+const channels = SUBSCRIPTION_CHANNELS
+const selectedChannels = ref<SubscriptionChannelKey[]>([])
+
+const channelName = (key: SubscriptionChannelKey) =>
+  channels.find((channel) => channel.key === key)?.name ?? key
+
+// 提交前一次性取消所有已勾选的栏目
+const clearSelection = () => {
+  selectedChannels.value = []
+}
+
+const handleSubscribe = () => {
+  if (selectedChannels.value.length === 0) {
+    ElMessage.warning('请至少选择一个感兴趣的栏目')
+    return
+  }
+  const { added, duplicated } = subscriptionStore.subscribe(selectedChannels.value)
+  if (added.length > 0) {
+    ElMessage.success(`已成功订阅 ${added.length} 个栏目`)
+  }
+  if (duplicated.length > 0) {
+    ElMessage.info(`${duplicated.map(channelName).join('、')} 已在订阅列表中，无需重复订阅`)
+  }
+  selectedChannels.value = []
+}
+
+// 逐条移除已订阅的栏目
+const handleUnsubscribe = (key: SubscriptionChannelKey) => {
+  subscriptionStore.unsubscribe(key)
+  ElMessage.success(`已取消订阅「${channelName(key)}」`)
+}
+
+const formatTime = (time: number) => {
+  const date = new Date(time)
+  const pad = (value: number) => String(value).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 </script>
 
@@ -257,6 +392,127 @@ const handleNotImplemented = () => {
   }
 }
 
+// 栏目订阅
+.footer-subscribe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-lg;
+  padding: $spacing-xl 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.subscribe-info {
+  h4 {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    font-size: $font-size-md;
+    font-weight: 600;
+    color: white;
+    margin-bottom: $spacing-xs;
+  }
+
+  p {
+    font-size: $font-size-sm;
+    color: rgba(255, 255, 255, 0.6);
+  }
+}
+
+.subscribe-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-lg;
+
+  :deep(.el-checkbox) {
+    color: rgba(255, 255, 255, 0.8);
+  }
+}
+
+.subscribe-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+
+  .el-button + .el-button {
+    margin-left: 0;
+  }
+}
+
+.notify-badge {
+  display: inline-flex;
+}
+
+.subscribed-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-sm;
+  width: 100%;
+
+  .subscribed-label {
+    font-size: $font-size-sm;
+    color: rgba(255, 255, 255, 0.6);
+  }
+}
+
+// 更新提醒弹层
+.notify-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-sm;
+
+  .notify-title {
+    font-size: $font-size-md;
+    font-weight: 600;
+  }
+}
+
+.notify-empty {
+  font-size: $font-size-sm;
+  color: $text-color-secondary;
+  line-height: $line-height-loose;
+}
+
+.notify-list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.notify-item {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-sm;
+  padding: $spacing-sm 0;
+
+  & + .notify-item {
+    border-top: 1px solid $border-color-light;
+  }
+
+  &.unread .notify-item-title {
+    font-weight: 600;
+  }
+}
+
+.notify-item-content {
+  flex: 1;
+  min-width: 0;
+
+  .notify-item-title {
+    font-size: $font-size-sm;
+    color: $text-color-primary;
+    line-height: $line-height-normal;
+  }
+
+  .notify-item-time {
+    font-size: $font-size-xs;
+    color: $text-color-secondary;
+  }
+}
+
 @media (max-width: $breakpoint-lg) {
   .footer-cta {
     flex-direction: column;
@@ -277,7 +533,12 @@ const handleNotImplemented = () => {
   .footer-links {
     grid-template-columns: 1fr;
   }
-  
+
+  .footer-subscribe {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .footer-bottom {
     flex-direction: column;
     gap: $spacing-md;

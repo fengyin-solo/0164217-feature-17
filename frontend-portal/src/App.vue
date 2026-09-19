@@ -13,8 +13,17 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
+import { useSubscriptionStore } from '@/stores/subscription'
+
+const subscriptionStore = useSubscriptionStore()
+
+// 启动时检查已订阅栏目是否有新内容，有则生成站内提醒
+onMounted(() => {
+  subscriptionStore.checkForUpdates()
+})
 </script>
 
 <style lang="scss">

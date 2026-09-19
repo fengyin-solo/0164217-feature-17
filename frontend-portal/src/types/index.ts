@@ -82,6 +82,24 @@ export interface ConsultationForm {
   requirement: string
 }
 
+// ==================== 栏目订阅 ====================
+export type SubscriptionChannelKey = 'about' | 'news' | 'products'
+
+export interface SubscriptionChannel {
+  key: SubscriptionChannelKey
+  name: string
+  path: string
+}
+
+export interface SubscriptionNotification {
+  id: string
+  channel: SubscriptionChannelKey
+  channelName: string
+  title: string
+  time: number
+  read: boolean
+}
+
 // ==================== 导航菜单 ====================
 export interface NavItem {
   name: string
