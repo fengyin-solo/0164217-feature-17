@@ -99,3 +99,40 @@ export interface BannerItem {
   link?: string
   buttonText?: string
 }
+
+// ==================== 栏目订阅 ====================
+// 可订阅栏目
+export interface SubscribeSection {
+  id: string
+  name: string
+  description: string
+  // 栏目对应的站内页面
+  path: string
+}
+
+// 订阅记录
+export interface Subscription {
+  sectionId: string
+  sectionName: string
+  path: string
+  subscribeTime: string
+}
+
+// 栏目更新提醒
+export interface SubscriptionNotice {
+  id: string
+  sectionId: string
+  sectionName: string
+  // 更新内容的标题
+  title: string
+  // 跳转路径
+  path: string
+  createdAt: string
+  read: boolean
+}
+
+// 栏目内容条目（用于检测更新）
+export interface SectionContentItem {
+  id: number
+  title: string
+}

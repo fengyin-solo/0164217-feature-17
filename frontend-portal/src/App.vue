@@ -9,12 +9,30 @@
       </router-view>
     </main>
     <AppFooter />
+    <SubscriptionDialog />
   </div>
 </template>
 
 <script setup lang="ts">
+import { onMounted, onUnmounted } from 'vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
+import SubscriptionDialog from '@/components/common/SubscriptionDialog.vue'
+import { useSubscriptionStore } from '@/stores'
+
+const subscriptionStore = useSubscriptionStore()
+
+// 启动时检测一次栏目更新，之后定时检测（订阅记录与提醒均持久化在本地）
+subscriptionStore.checkUpdates()
+let updateTimer: number | undefined
+onMounted(() => {
+  updateTimer = window.setInterval(() => {
+    subscriptionStore.checkUpdates()
+  }, 60000)
+})
+onUnmounted(() => {
+  if (updateTimer) window.clearInterval(updateTimer)
+})
 </script>
 
 <style lang="scss">

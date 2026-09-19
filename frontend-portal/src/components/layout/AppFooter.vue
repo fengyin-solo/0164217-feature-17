@@ -70,6 +70,18 @@
             <span>北京市朝阳区科技园区</span>
             <span>工作日 9:00-18:00</span>
           </div>
+
+          <div class="link-group">
+            <h4>更新订阅</h4>
+            <a href="#" class="subscribe-link" @click.prevent="handleOpenSubscription">
+              <el-icon><Bell /></el-icon>
+              订阅栏目更新
+            </a>
+            <span class="subscribe-hint">订阅关于我们、新闻动态、产品服务，新内容站内提醒</span>
+            <span v-if="subscriptionStore.subscriptions.length > 0" class="subscribe-status">
+              已订阅 {{ subscriptionStore.subscriptions.length }} 个栏目
+            </span>
+          </div>
         </div>
       </div>
 
@@ -90,12 +102,18 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { useSubscriptionStore } from '@/stores'
 
 const router = useRouter()
+const subscriptionStore = useSubscriptionStore()
 const currentYear = computed(() => new Date().getFullYear())
 
 const handleNotImplemented = () => {
   ElMessage.info('功能开发中，敬请期待')
+}
+
+const handleOpenSubscription = () => {
+  subscriptionStore.openSubscriptionDialog()
 }
 </script>
 
@@ -206,7 +224,7 @@ const handleNotImplemented = () => {
 
 .footer-links {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: $spacing-xl;
 }
 
@@ -219,7 +237,7 @@ const handleNotImplemented = () => {
     letter-spacing: 0.05em;
     margin-bottom: $spacing-lg;
   }
-  
+
   a, span {
     display: block;
     font-size: $font-size-sm;
@@ -227,10 +245,32 @@ const handleNotImplemented = () => {
     padding: $spacing-xs 0;
     transition: color $transition-fast;
   }
-  
+
   a:hover {
     color: white;
   }
+}
+
+.subscribe-link {
+  display: flex !important;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.85) !important;
+
+  &:hover {
+    color: white !important;
+  }
+}
+
+.subscribe-hint {
+  font-size: $font-size-xs !important;
+  line-height: $line-height-normal;
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.subscribe-status {
+  font-size: $font-size-xs !important;
+  color: $primary-color-light !important;
 }
 
 // 底部版权

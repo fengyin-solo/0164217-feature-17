@@ -31,6 +31,7 @@
       </nav>
 
       <div class="header-actions">
+        <NotificationBell />
         <el-button class="contact-btn" type="primary" round @click="router.push('/contact')">
           开始咨询
           <el-icon class="btn-arrow"><Right /></el-icon>
@@ -63,6 +64,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import type { NavItem } from '@/types'
+import NotificationBell from '@/components/common/NotificationBell.vue'
 
 const router = useRouter()
 const route = useRoute()
